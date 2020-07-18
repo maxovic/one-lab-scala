@@ -38,26 +38,35 @@ object FileManager extends App {
   case class ChangePathError(error: String)
   case class FileDoesNotExistError(error: String)
   case class FileAlreadyExistError(error: String)
+  case class GetContent(filter: Option[String])
 
 
+  def getContent(path: String, content: GetContent): List[String] = {
+    val res = Files
+                    .list(Paths.get(path))
+                    .iterator()
+                    .asScala
+    content.filter match {
+      case Some(value) =>
+        if (value == "files") res.filter(path  => path.toFile.isFile)
+                                 .map(path     => path.toFile.getName)
+                                 .map(name     => s"/$path/$name")
+                                 .toList
+        else                  res.filter(path  => path.toFile.isDirectory)
+                                 .map(path     => path.toFile.getName)
+                                 .map(name     => s"/$path/$name")
+                                 .toList
+    }
+  }
 
-  def getFiles(path: String): List[String] = Files
-    .list(Paths.get(path))
-    .iterator()
-    .asScala
-    .filter(path => path.toFile.isFile)
-    .map(path    => path.toFile.getName)
-    .map(name    => s"/$path/$name")
-    .toList
-
-  def getDirectories(path: String): List[String] = Files
-    .list(Paths.get(path))
-    .iterator()
-    .asScala
-    .filter(path  => path.toFile.isDirectory)
-    .map(path     => path.toFile.getName)
-    .map(name     => s"/$path/$name")
-    .toList
+//  def getDirectories(path: String): List[String] = Files
+//    .list(Paths.get(path))
+//    .iterator()
+//    .asScala
+//    .filter(path  => path.toFile.isDirectory)
+//    .map(path     => path.toFile.getName)
+//    .map(name     => s"/$path/$name")
+//    .toList
 
   def createFile(path: String, name: String): Either[FileAlreadyExistError, String] = {
     if (Files.exists(Paths.get(s"$path/$name")) == false) {
@@ -75,13 +84,9 @@ object FileManager extends App {
   }
 
 
-  def getAllContent(path: String): List[String] = Files
-    .list(Paths.get(path))
-    .iterator()
-    .asScala
-    .map(path => path.toFile.getName)
-    .map(name => s"/$path/$name")
-    .toList
+  def getAllContent(path: String): List[String] = {
+        List.concat(getContent(path, GetContent(Some("files"))), getContent(path, GetContent(Some("dirs"))))
+  }
 
   def changePath(current: String, path: String): Either[ChangePathError, String] = {
     var destination: String = new String()
@@ -110,8 +115,8 @@ object FileManager extends App {
 
   def handleCommand(command: Command, currentPath: String): String =
     command match {
-        case ListFilesCommand()                   => getFiles(currentPath).mkString(", ")
-        case ListDirectoryCommand()               => getDirectories(currentPath).mkString(", ")
+        case ListFilesCommand()                   => getContent(currentPath, GetContent(Some("files"))).mkString(", ")
+        case ListDirectoryCommand()               => getContent(currentPath, GetContent(Some("dirs"))).mkString(", ")
         case ListAllContentCommand()              => getAllContent(currentPath).mkString(", ")
         case CreateNewFile(name)                  => createFile(currentPath, name) match {
             case Left(value)  => value.error
@@ -132,7 +137,6 @@ object FileManager extends App {
         val command = parseCommand(request)
         val newPath  = handleCommand(command, path)
         println(newPath)
-
         if (command.isSubstitutive) layer(newPath)
         else layer(path)
       }
