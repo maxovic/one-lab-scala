@@ -26,7 +26,7 @@ object RestClientImpl {
       method = HttpMethods.GET,
       uri = url
     )
-    Http().singleRequest(request).flatMap(parseResponse)
+    Http().singleRequest(request).flatMap(response => parseResponse(response))
   }
 
   def post[T](

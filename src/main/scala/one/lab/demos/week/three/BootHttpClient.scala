@@ -7,10 +7,10 @@ import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.Uri
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
-import io.github.arturka.chat.library.LinkAttachment
-import io.github.arturka.chat.library.Message
+//import io.github.arturka.chat.library.LinkAttachment
+//import io.github.arturka.chat.library.Message
 import org.json4s.native.JsonMethods.parse
 import org.json4s.DefaultFormats
 import requests.Response
@@ -39,7 +39,7 @@ object BootHttpClient extends App {
   val response1 =
     parse(requests.get("https://api.github.com/users/nullpointer666").text).camelizeKeys.extract[GithubUser]
 
-  println(response1)
+  println(response)
 //  val response2: String = requests.get("https://api.github.com/users/arturka").text
 //  val response3: String = requests.get("https://api.github.com/users/arturka").text
 //
@@ -53,19 +53,18 @@ object BootHttpClient extends App {
       entity.dataBytes.runFold(ByteString.empty)((acc, bytes) => acc ++ bytes).map(_.utf8String)
     }
 
-  val requestArturUser =
-    Http()
+
+  val requestArturUser = Http()
       .singleRequest(HttpRequest(HttpMethods.GET, Uri("https://api.github.com/users/arturka")))
       .flatMap(response => parseResponse(response))
       .map(body => parse(body).camelizeKeys.extract[GithubUser])
 
-  val requestNullPointerUser: Future[GithubUser] =
-    Http()
+  val requestNullPointerUser: Future[GithubUser] = Http()
       .singleRequest(HttpRequest(HttpMethods.GET, Uri("https://api.github.com/users/nullpointer666")))
       .flatMap(response => parseResponse(response))
       .map(body => parse(body).camelizeKeys.extract[GithubUser])
 
   requestArturUser.foreach(x => println(x))
-  requestNullPointerUser.foreach(x => println(x))
+//  requestNullPointerUser.foreach(x => println(x))
 
 }
